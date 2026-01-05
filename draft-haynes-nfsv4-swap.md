@@ -1,6 +1,6 @@
 ---
-title: Adding a SWAP Operation to NFSv4.2
-abbrev: SWAP Operation
+title: Adding an Atomic SWAP Operation to NFSv4.2
+abbrev: atomic SWAP
 docname: draft-haynes-nfsv4-swap-latest
 category: std
 date: {DATE}
@@ -43,11 +43,10 @@ informative:
 
 --- abstract
 
-The Network File System version 4.2 (NFSv4.2) allows for the atomic
-update of data in a single WRITE operation. It does not allow for
-an atomic update of multiple WRITE operations. This document
-introduces a new SWAP operation which allows for such atomic updates.
-This document extends NFSv4.2 (see RFC7862).
+The Network File System version 4.2 (NFSv4.2) does not provide
+support for the atomic update of data.  This document introduces a
+new SWAP operation which provides for such atomic updates.  This
+document extends NFSv4.2 (see RFC7862).
 
 --- note_Note_to_Readers
 
@@ -64,13 +63,14 @@ Working Group information can be found at [](https://github.com/ietf-wg-nfsv4).
 
 # Introduction
 
-With the Network File System version 4.2 (NFSv4.2), a single WRITE
-operation can be atomically applied to a file. However, multiple
-WRITE operations, even within the same compoud, may not be atomically
-applied to a file. I.e., multiple WRITE operations within the same
-compound could be atomically applied, but that is implementation
-specific. There is nothing in the protocol that ensures such
-coordination.
+With the Network File System version 4.2 (NFSv4.2), atomic updates
+to a file are not guaranteed. A single WRITE operation might span
+multiple data blocks and another client doing a READ might encounter
+a partial WRITE.  In addition, multiple WRITE operations, even
+within the same compound, may not be atomically applied to a file.
+I.e., multiple WRITE operations within the same compound could be
+atomically applied, but that is implementation specific. There is
+nothing in the protocol that ensures such coordination.
 
 This document introduces the OPTIONAL to implement SWAP operation
 to NFSv4.2 to atomically apply multiple WRITE operations to a file.
@@ -197,17 +197,6 @@ are defined in Section 15 of {{RFC8881}} and Section 11 of {{RFC7862}}.
  | SWAP                 | NFS4ERR_ACCESS, NFS4ERR_ADMIN_REVOKED, NFS4ERR_BADXDR, NFS4ERR_BAD_STATEID, NFS4ERR_DEADSESSION, NFS4ERR_DELAY, NFS4ERR_DELEG_REVOKED, NFS4ERR_DQUOT, NFS4ERR_EXPIRED, NFS4ERR_FBIG, NFS4ERR_FHEXPIRED, NFS4ERR_GRACE, NFS4ERR_INVAL, NFS4ERR_IO, NFS4ERR_ISDIR, NFS4ERR_LOCKED, NFS4ERR_MOVED, NFS4ERR_NOFILEHANDLE, NFS4ERR_NOSPC, NFS4ERR_NOTSUPP, NFS4ERR_OLD_STATEID, NFS4ERR_OPENMODE, NFS4ERR_OP_NOT_IN_SESSION, NFS4ERR_PNFS_IO_HOLE, NFS4ERR_PNFS_NO_LAYOUT, NFS4ERR_REP_TOO_BIG, NFS4ERR_REP_TOO_BIG_TO_CACHE, NFS4ERR_REQ_TOO_BIG, NFS4ERR_RETRY_UNCACHED_REP, NFS4ERR_ROFS, NFS4ERR_SERVERFAULT, NFS4ERR_STALE, NFS4ERR_SYMLINK, NFS4ERR_TOO_MANY_OPS, NFS4ERR_WRONG_TYPE                     |
 {: #tbl-ops-and-errors title="Operations and Their Valid Errors"}
 
-
-# XDR for Uncacheable Attribute
-
-~~~ xdr
-///
-/// typedef bool            fattr4_uncacheable_file;
-///
-/// const FATTR4_UNCACHEABLE_FILE       = 87;
-///
-~~~
-
 # Extraction of XDR
 
 This document contains the external data representation (XDR)
@@ -253,7 +242,7 @@ This document has no IANA actions.
 # Acknowledgments
 {:numbered="false"}
 
-Christoph Helwig inadvertantly pointed out the XFS swap implementation
+Christoph Helwig inadvertently pointed out the XFS swap implementation
 ({{XFS-EXCHANGE-RANGE}}) which prompted this document.
 
 Chris Inacio, Brian Pawlowski, and Gorry Fairhurst helped guide
