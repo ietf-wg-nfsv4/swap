@@ -43,9 +43,9 @@ informative:
 --- abstract
 
 The Network File System version 4.2 (NFSv4.2) does not provide
-support for the atomic update of data.  This document introduces a
-new SWAP operation which provides for such atomic updates.  This
-document extends NFSv4.2 (see RFC7862).
+support for atomic multi-block updates to file data.  This document
+introduces a new SWAP operation which provides for such atomic
+updates.  This document extends NFSv4.2 (see RFC7862).
 
 --- note_Note_to_Readers
 
@@ -67,9 +67,9 @@ to a file are not guaranteed. A single WRITE operation might span
 multiple data blocks and another client doing a READ might encounter
 a partial WRITE.  In addition, multiple WRITE operations, even
 within the same compound, may not be atomically applied to a file.
-I.e., multiple WRITE operations within the same compound could be
-atomically applied, but that is implementation specific. There is
-nothing in the protocol that ensures such coordination.
+In some implementations, multiple WRITE operations within the same
+compound may appear to be applied atomically, but this behavior is
+implementation-specific and not guaranteed by the protocol.
 
 This document introduces the OPTIONAL to implement SWAP operation
 to NFSv4.2 to atomically apply multiple WRITE operations to a file.
@@ -163,6 +163,8 @@ count may be greater than the size of the destination file.
 
 If SAVED_FH and CURRENT_FH refer to the same file and the source
 and target ranges overlap, the operation MUST fail with NFS4ERR_INVAL.
+This restriction avoids undefined behavior that could arise from
+overlapping atomic replacement of data within a single file.
 
 If the target area of the SWAP operation ends beyond the end of the
 destination file, the offset at the end of the target area will
@@ -173,7 +175,8 @@ file size were extended by a WRITE.
 If the area to be swapped is not a multiple of the clone block size
 and the size of the destination file is past the end of the target
 area, the area between the end of the target area and the next
-multiple of the clone block size will be zeroed.
+multiple of the clone block size will be zeroed to ensure deterministic
+file contents.
 
 The SWAP operation is atomic in that other operations may not see
 any intermediate states between the state of the two files before
@@ -182,6 +185,10 @@ file will never see some blocks of the target area cloned without
 all of them being swapped.  WRITEs of the source area will either
 have no effect on the data of the target file or be fully reflected
 in the target area of the destination file.
+
+Atomicity is defined with respect to NFSv4.2 READ and WRITE operations
+issued by other clients; the protocol makes no guarantees regarding
+the visibility of intermediate states to server-internal mechanisms.
 
 The completion status of the operation is indicated by sr_status.
 
@@ -195,6 +202,10 @@ are defined in Section 15 of {{RFC8881}} and Section 11 of {{RFC7862}}.
  | ---
  | SWAP                 | NFS4ERR_ACCESS, NFS4ERR_ADMIN_REVOKED, NFS4ERR_BADXDR, NFS4ERR_BAD_STATEID, NFS4ERR_DEADSESSION, NFS4ERR_DELAY, NFS4ERR_DELEG_REVOKED, NFS4ERR_DQUOT, NFS4ERR_EXPIRED, NFS4ERR_FBIG, NFS4ERR_FHEXPIRED, NFS4ERR_GRACE, NFS4ERR_INVAL, NFS4ERR_IO, NFS4ERR_ISDIR, NFS4ERR_LOCKED, NFS4ERR_MOVED, NFS4ERR_NOFILEHANDLE, NFS4ERR_NOSPC, NFS4ERR_NOTSUPP, NFS4ERR_OLD_STATEID, NFS4ERR_OPENMODE, NFS4ERR_OP_NOT_IN_SESSION, NFS4ERR_PNFS_IO_HOLE, NFS4ERR_PNFS_NO_LAYOUT, NFS4ERR_REP_TOO_BIG, NFS4ERR_REP_TOO_BIG_TO_CACHE, NFS4ERR_REQ_TOO_BIG, NFS4ERR_RETRY_UNCACHED_REP, NFS4ERR_ROFS, NFS4ERR_SERVERFAULT, NFS4ERR_STALE, NFS4ERR_SYMLINK, NFS4ERR_TOO_MANY_OPS, NFS4ERR_WRONG_TYPE                     |
 {: #tbl-ops-and-errors title="Operations and Their Valid Errors"}
+
+If the destination file has active pNFS layouts that prevent atomic
+modification of the target range, the server may return an appropriate
+pNFS-related error.
 
 # Extraction of XDR
 
